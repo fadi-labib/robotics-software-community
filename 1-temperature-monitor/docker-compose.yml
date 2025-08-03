@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  python_node:
+    build:
+      context: .
+      dockerfile: broadcaster_ws/Dockerfile
+    image: broadcaster_img
+    container_name: temperature_broadcaster
+    networks:
+      - ros-net
+
+  cpp_node:
+    build:
+      context: .
+      dockerfile: listener_ws/Dockerfile
+    image: listener_img
+    container_name: temperature_listener
+    networks:
+      - ros-net
+    depends_on:
+      - python_node
+
+networks:
+  ros-net:
+    driver: bridge
