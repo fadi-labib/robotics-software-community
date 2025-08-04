@@ -1,23 +1,34 @@
-version: "3.9"
+# version: "3.9"
 
 services:
+  ros_base:
+    build:
+      context: ./docker
+      dockerfile: ros-base.Dockerfile
+    image: ros-base:dev
   python_node:
     build:
-      context: .
-      dockerfile: broadcaster_ws/Dockerfile
+      context: ./broadcaster_ws
+      dockerfile: Dockerfile
     image: broadcaster_img
     container_name: temperature_broadcaster
     networks:
       - ros-net
+    environment:
+      - ROS_DOMAIN_ID=10
+    depends_on:
+      - ros_base
 
   cpp_node:
     build:
-      context: .
-      dockerfile: listener_ws/Dockerfile
+      context: ./listener_ws
+      dockerfile: Dockerfile
     image: listener_img
     container_name: temperature_listener
     networks:
       - ros-net
+    environment:
+      - ROS_DOMAIN_ID=10
     depends_on:
       - python_node
 
