@@ -7,9 +7,13 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces("temperature_interfaces"
+  "msg/Temperature.msg"
+  DEPENDENCIES builtin_interfaces # Add packages that above messages depend on
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

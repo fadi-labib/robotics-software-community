@@ -11,4 +11,5 @@ RUN . /opt/ros/humble/setup.sh && \
     colcon build
 
 CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && \
-      ros2 topic list"  ]
+      source install/setup.bash && \
+      ros2 interface show temperature_interfaces/msg/Temperature"  ]
