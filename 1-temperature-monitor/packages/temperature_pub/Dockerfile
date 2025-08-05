@@ -12,4 +12,5 @@ RUN . /opt/ros/humble/setup.sh && \
 
 CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && \
       source install/setup.bash && \
-      ros2 interface show temperature_interfaces/msg/Temperature"  ]
+      ros2 interface show temperature_interfaces/msg/Temperature && \
+      ros2 run temperature_pub temp_pub"  ]

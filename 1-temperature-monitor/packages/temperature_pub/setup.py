@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            "temp_pub = temperature_pub.temperature_pub:main"
         ],
     },
 )
