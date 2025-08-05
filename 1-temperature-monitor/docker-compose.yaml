@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+   
+   temperature_pub:
+
+    build: 
+      context: ./packages
+      dockerfile: temperature_pub/Dockerfile
+
+    environment:
+      - ROS_LOCALHOST_ONLY=1
+      - ROS_DOMAIN_ID=42
+
+    network_mode: host
+
+    # Will help if the RMW (FastDDS) uses shared memory - still needs testing to check if it's actually needed.
+    ipc: host 
+
+    container_name: temperature_publisher
+
+   temperature_sub:
+
+    build: 
+      context: ./packages
+      dockerfile: temperature_sub/Dockerfile
+
+    environment:
+      - ROS_LOCALHOST_ONLY=1
+      - ROS_DOMAIN_ID=42
+
+    network_mode: host
+    ipc: host
+
+    container_name: temperature_subscriber
