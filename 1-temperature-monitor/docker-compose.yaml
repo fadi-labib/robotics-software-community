@@ -8,7 +8,9 @@ services:
       dockerfile: temperature_pub/Dockerfile
 
     environment:
+      # Note ROS_LOCALHOST_ONLY should be changed to 0 if we change the network to bridge
       - ROS_LOCALHOST_ONLY=1
+      # For Linux : (IDs 0-101 and 215-232)
       - ROS_DOMAIN_ID=42
 
     network_mode: host
@@ -32,3 +34,6 @@ services:
     ipc: host
 
     container_name: temperature_subscriber
+    
+    depends_on:
+      - temperature_pub 
