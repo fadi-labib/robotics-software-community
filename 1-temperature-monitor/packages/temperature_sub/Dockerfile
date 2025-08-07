@@ -12,4 +12,4 @@ RUN . /opt/ros/humble/setup.sh && \
 
 CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && \
       source install/setup.bash && \
-      ros2 topic echo /temperature"  ]
+      ros2 run temperature_sub temp_sub"  ]
