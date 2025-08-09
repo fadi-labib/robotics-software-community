@@ -9,13 +9,20 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(custom_temperature_msgs REQUIRED)
 
 add_executable(test_listener_node src/test_listener_node.cpp)
 ament_target_dependencies(test_listener_node rclcpp std_msgs)
 
+add_executable(temperature_listener_node src/temperature_listener_node.cpp)
+ament_target_dependencies(temperature_listener_node rclcpp std_msgs custom_temperature_msgs)
+
 install(TARGETS
   test_listener_node
+  temperature_listener_node
   DESTINATION lib/${PROJECT_NAME})
+
+ament_export_dependencies(rosidl_default_runtime)
 
 
 if(BUILD_TESTING)
