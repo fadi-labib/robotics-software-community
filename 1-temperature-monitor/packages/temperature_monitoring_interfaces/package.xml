@@ -6,7 +6,7 @@
   <description>Messages, Services and Actions for temperature monitoring.</description>
 
   <maintainer email="yarashahinstem@gmail.com">Yara Shahin</maintainer>
-  <maintainer email="yarashahinstem@gmail.com">Taha</maintainer> <!-- TODO -->
+  <maintainer email="mahmoud3taha@gmail.com">Taha</maintainer>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
