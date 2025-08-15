@@ -39,8 +39,9 @@ class TemperaturePublisherNode(Node):
         # For clarity only as it's true by default
         msg.is_celsius = True 
 
-        self.temp_publisher_.publish(msg)
         self.get_logger().info(f'Published: {msg.value:.2f}°{"C" if msg.is_celsius else "F"} from {msg.sensor_id}')
+        self.temp_publisher_.publish(msg)
+        
 
 
     def randomize_temperature(self):
