@@ -2,6 +2,7 @@
 import rclpy
 import numpy as np
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 
 from temperature_interfaces.msg import Temperature
 
@@ -22,7 +23,10 @@ class TemperaturePublisherNode(Node):
         self.min_temp_ = self.get_parameter("min_temp").value
         self.max_temp_ = self.get_parameter("max_temp").value
 
-        self.temp_publisher_ = self.create_publisher(Temperature, "temperature", 10)
+        # Create a publisher with sensor data QOS profile
+        # Decided to use sensor data profile as the publisher is simulating being a sensor
+        # profile details in (ros2/rmw : rmw/include/rmw/qos_profiles.h)
+        self.temp_publisher_ = self.create_publisher(Temperature, "temperature", qos_profile_sensor_data)
 
         self.timer_ = self.create_timer(1.0 / self.publish_frequency_, self.publish_temperature)
 

@@ -20,9 +20,9 @@ public:
         warning_max_ =this->get_parameter("warning_max").as_double();
         warning_min_ =this->get_parameter("warning_min").as_double();
 
-        // Subscribe to temperature topic
+        // Subscribe to temperature topic with sensor data QOS profile
         subscriber_ = this->create_subscription<temperature_interfaces::msg::Temperature>(
-            "temperature", 10,
+            "temperature",rclcpp::SensorDataQoS(),
             std::bind(&TemperatureSubscriberNode::temperature_processing, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "Temperature subscriber has been started.");
     }
