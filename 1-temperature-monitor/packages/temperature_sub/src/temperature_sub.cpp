@@ -129,5 +129,6 @@ int main(int argc, char **argv)
     auto node = std::make_shared<TemperatureSubscriberNode>();
     rclcpp::spin(node);
     rclcpp::shutdown();
+    printf("Subscriber shutdown complete");
     return 0;
 }

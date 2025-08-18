@@ -3,6 +3,9 @@ import rclpy
 import numpy as np
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.signals import SignalHandlerOptions
+import traceback
+from rclpy.executors import ExternalShutdownException
 
 from temperature_interfaces.msg import Temperature
 
@@ -73,11 +76,28 @@ class TemperaturePublisherNode(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    rclpy.init(args=args,signal_handler_options=SignalHandlerOptions.ALL)
     node = TemperaturePublisherNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+
+    # Graceful shutdown handling
+    try:
+        rclpy.spin(node)
+          
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt caught: shutting down")
+        
+    except ExternalShutdownException:
+        print("ExternalShutdownException caught: shutting down")
+
+    except Exception as e:
+        print(f"Exception caught: {str(e)}")
+        print(traceback.format_exc())
+
+    finally:      
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+        print("Publisher shutdown complete")
 
 
 if __name__ == "__main__":

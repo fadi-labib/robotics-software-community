@@ -7,6 +7,10 @@ services:
       context: ./packages
       dockerfile: temperature_pub/Dockerfile
 
+    # Adds an init system to propagate/handle incoming signals to container
+    # Used to allow SIGTERM to propagate to nodes for graceful shutdown
+    init: true
+
     environment:
       # Note ROS_LOCALHOST_ONLY should be changed to 0 if we change the network to bridge
       - ROS_LOCALHOST_ONLY=1
@@ -25,6 +29,8 @@ services:
     build: 
       context: ./packages
       dockerfile: temperature_sub/Dockerfile
+
+    init: true
 
     environment:
       - ROS_LOCALHOST_ONLY=1
