@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>temperature_interfaces</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="youhana@todo.todo">youhana</maintainer>
-  <license>TODO: License declaration</license>
+  <version>0.1.1</version>
+  <description>Package containing custom Temperature message definition </description>
+  <maintainer email="youhanabeshay@gmail.com">Youhana Beshay</maintainer>
+  <license>MPL-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
