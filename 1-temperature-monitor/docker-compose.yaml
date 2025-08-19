@@ -11,6 +11,9 @@ services:
     # Used to allow SIGTERM to propagate to nodes for graceful shutdown
     init: true
 
+    # Needed for a workaround to make launch file exit cleanly
+    stop_signal: SIGINT
+
     environment:
       # Note ROS_LOCALHOST_ONLY should be changed to 0 if we change the network to bridge
       - ROS_LOCALHOST_ONLY=1
@@ -31,6 +34,7 @@ services:
       dockerfile: temperature_sub/Dockerfile
 
     init: true
+    stop_signal: SIGINT
 
     environment:
       - ROS_LOCALHOST_ONLY=1
