@@ -47,3 +47,28 @@ services:
     
     depends_on:
       - temperature_pub 
+
+
+   temperature_web:
+
+    build: 
+      context: ./packages
+      dockerfile: temperature_web/Dockerfile
+
+    init: true
+
+    # As temperature_web waits for SIGKILL if we send SIGINT
+    stop_signal: SIGTERM
+
+    environment:
+      - ROS_LOCALHOST_ONLY=1
+      - ROS_DOMAIN_ID=42
+
+    network_mode: host
+    ipc: host
+    
+    container_name: temperature_web_interface
+    
+    depends_on:
+      - temperature_pub 
+      - temperature_sub

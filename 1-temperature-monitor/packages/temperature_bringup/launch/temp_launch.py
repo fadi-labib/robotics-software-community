@@ -5,7 +5,7 @@ from launch.actions import ExecuteProcess, LogInfo
 # As without this workaround containers will not close cleanly
 # see https://github.com/ros2/launch/issues/666 for more info
 
-# However this workaround still does not display nodes shutting down messages for some reason 
+# TODO: However this workaround still does not display nodes shutting down messages for some reason 
 
 def generate_launch_description():
     return LaunchDescription([

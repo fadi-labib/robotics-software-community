@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+   
+<head>
+    <meta charset="UTF-8">
+    <title>ROS2 Temperature Monitor</title>
+    <!-- import the roslib.js library (a JavaScript API, which communicates with rosbridge over Websockets)-->
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+    <!-- import chart.js for making the line chart-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- css file -->
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <body>
+        <div class="container">
+            <h1>Temperature Monitor</h1>
+            <p class="status-line">
+                Rosbridge Status: <span id="status" class="status">N/A</span>
+            </p>
+            <canvas id="temperatureChart"></canvas>
+        </div>
+
+        <script>
+            
+            // Connect to rosbridge
+            const ros = new ROSLIB.Ros({ url: "ws://localhost:9090" });
+
+            // Update status of rosbridge
+            ros.on("connection", () => {
+                document.getElementById("status").textContent = "Connected";
+                document.getElementById("status").className = "status connected";
+            });
+
+            ros.on("error", (error) => {
+                document.getElementById("status").innerHTML = `errored out (${error})`;
+                document.getElementById("status").className = "status error";
+            });
+
+            ros.on("close", () => {
+                document.getElementById("status").textContent = "Disconnected";
+                document.getElementById("status").className = "status";;
+            });
+
+            // Subscribe to '/temperature'
+            const tempListener = new ROSLIB.Topic({
+                ros,
+                name: "/temperature",
+                messageType: "temperature_interfaces/msg/Temperature",
+            });
+
+            // Creating the Chart.js line chart
+            const ctx = document.getElementById("temperatureChart").getContext("2d");
+            const tempChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: [], 
+                    datasets: [
+                        {
+                            label: "Temperature (°C)",
+                            data: [],
+                            borderColor: "blue",
+                            // Change point color to red if inside warning range
+                            // values now are hardcoded to the default 
+                            pointBackgroundColor: (ctx) => {
+                                const value = ctx.raw;
+                                if (value > 50 || value < 10) return "red";
+                                return "blue";
+                            },
+                            fill: false,
+                            tension: 0.4,
+
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    scales: {
+                        x: { title: { display: true, text: "Time" } },
+                        y: { title: { display: true, text: "Temperature (°C)" } },
+                    },
+                },
+            });
+
+            // Add new data to chart whenever a ROS message arrives
+            tempListener.subscribe((message) => {
+                console.log("Received message:", message);
+
+                const tempValue = message.value
+                const timestamp = new Date().toLocaleTimeString();
+
+               
+                tempChart.data.labels.push(timestamp);
+                tempChart.data.datasets[0].data.push(tempValue);
+
+                tempChart.update();
+            });
+            
+            /* 
+            TODO: Either implement the moving average again in the frontend 
+                  Or publish the moving average from temp_sub and subscribe to it then display it on the line chart
+            */
+        </script>
+    </body>
+
+</html>
