@@ -22,6 +22,9 @@
             <p class="status-line">
                 Rosbridge Status: <span id="status" class="status">N/A</span>
             </p>
+            <p class="max-temp-line"> 
+                Max Temperature: <span id="maxTemp">N/A</span>
+            </p>
             <canvas id="temperatureChart"></canvas>
         </div>
 
@@ -46,14 +49,26 @@
                 document.getElementById("status").className = "status";;
             });
 
-            // Subscribe to '/temperature'
+            // Create a topic object '/temperature'
             const tempListener = new ROSLIB.Topic({
                 ros,
                 name: "/temperature",
                 messageType: "temperature_interfaces/msg/Temperature",
             });
 
+            // Create a topic object '/processed_temps'
+            const processed_tempsListener = new ROSLIB.Topic({
+                ros,
+                name: "/processed_temps",
+                messageType: "std_msgs/msg/Float64MultiArray",
+            });
+
             // Creating the Chart.js line chart
+            
+            // intialze defualt values for warning range 
+            warning_max = 50.0;
+            warning_min = 10.0;
+
             const ctx = document.getElementById("temperatureChart").getContext("2d");
             const tempChart = new Chart(ctx, {
                 type: "line",
@@ -64,17 +79,20 @@
                             label: "Temperature (°C)",
                             data: [],
                             borderColor: "blue",
-                            // Change point color to red if inside warning range
-                            // values now are hardcoded to the default 
-                            pointBackgroundColor: (ctx) => {
-                                const value = ctx.raw;
-                                if (value > 50 || value < 10) return "red";
-                                return "blue";
-                            },
+                            pointBackgroundColor:[],
                             fill: false,
                             tension: 0.4,
 
                         },
+                        {
+                            label: "Moving Average (°C)",
+                            data: [],
+                            borderColor: "green",
+                            backgroundColor: "green",
+                            fill: false,
+                            tension: 0.4,
+                            hidden: true 
+                        }
                     ],
                 },
                 options: {
@@ -86,25 +104,52 @@
                     },
                 },
             });
+            
+            // Subscribe to '/temperature'
+            tempListener.subscribe((temperature_message) => {
+                console.log("Received message from /temperature:", temperature_message);
 
-            // Add new data to chart whenever a ROS message arrives
-            tempListener.subscribe((message) => {
-                console.log("Received message:", message);
-
-                const tempValue = message.value
+                const tempValue = temperature_message.value
                 const timestamp = new Date().toLocaleTimeString();
 
-               
+                // Add new data to chart whenever a ROS message arrives
                 tempChart.data.labels.push(timestamp);
                 tempChart.data.datasets[0].data.push(tempValue);
 
+                // Determine color for new point
+                // this also updates colors for all points in case warning range changed
+                tempChart.data.datasets[0].pointBackgroundColor = tempChart.data.datasets[0].data.map(value => {
+                    if (value > warning_max || value < warning_min) {
+                        return "red";
+                    } else {
+                        return "blue";
+                    }
+                });
+
                 tempChart.update();
             });
-            
-            /* 
-            TODO: Either implement the moving average again in the frontend 
-                  Or publish the moving average from temp_sub and subscribe to it then display it on the line chart
-            */
+
+            // Subscribe to '/processed_temps' 
+            processed_tempsListener.subscribe((processed_temps_message) => {
+                console.log("Received message from /processed_temps:", processed_temps_message);
+
+                const mv_average = processed_temps_message.data[0]
+                const timestamp = new Date().toLocaleTimeString();
+                // Only add moving average to chart if it's not 0.00 (not the defualt value)
+                if (mv_average !== 0.00) {
+                    tempChart.data.datasets[1].hidden = false;
+                    tempChart.data.datasets[1].data.push(mv_average);
+                }         
+                // Update Max Temperature
+                const max_temp = processed_temps_message.data[1]
+                document.getElementById("maxTemp").textContent = parseFloat(max_temp).toFixed(2) + "°C";
+                
+                // Get warning max & min 
+                warning_max= processed_temps_message.data[2];
+                warning_min = processed_temps_message.data[3];
+
+                tempChart.update();
+            });   
         </script>
     </body>
 
