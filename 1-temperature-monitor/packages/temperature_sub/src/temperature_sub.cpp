@@ -1,5 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "temperature_interfaces/msg/temperature.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 
 #include <queue>
 #include <cfloat>
@@ -25,11 +26,19 @@ public:
             "temperature",rclcpp::SensorDataQoS(),
             std::bind(&TemperatureSubscriberNode::temperature_processing, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "Temperature subscriber has been started.");
+
+        // Publisher for processed temperatures to display in web interface
+        // It's recommended by documentation to create a custom interface but the std_interface will do the job
+        publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
+            "processed_temps", rclcpp::SensorDataQoS());
+
     }
 
 private:
 
     rclcpp::Subscription<temperature_interfaces::msg::Temperature>::SharedPtr subscriber_;
+    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr publisher_;
+
     // Parameters
     int moving_average_period_ ;
     double warning_max_;
@@ -68,7 +77,7 @@ private:
 
         // Calculate moving average
         sum_ += temp_celsius;
-        double mv_average = 0;
+        double mv_average = 0.00;
         bool mv_average_ready = false;
 
         if (temp_celsius_values_.size() >= moving_average_period_)
@@ -118,10 +127,27 @@ private:
             RCLCPP_WARN(this->get_logger(),"Temperature value outside normal range.");
         }
         
+        
+        //Publish the processed temps to web interface
+        /*
+        Note that we will publish mv_average = 0.00 until mv_average_ready = true
+        but that will be handled in the front end (website)
+        */
+            publish_processed_temps(mv_average,max_temp_);
+
 
 
     }
+
+    void publish_processed_temps(double mv_average,double max_temperature)
+    {
+
+        auto processed_msg = std_msgs::msg::Float64MultiArray();
+        processed_msg.data = {mv_average,max_temperature,warning_max_,warning_min_};
+        publisher_->publish(processed_msg);
+    }
 };
+
 
 int main(int argc, char **argv)
 {
