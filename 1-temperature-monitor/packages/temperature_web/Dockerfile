@@ -1,8 +1,7 @@
 FROM ros:humble
 
-
-COPY temperature_web docker_ws/temperature_web
 COPY temperature_interfaces docker_ws/src/temperature_interfaces 
+COPY temperature_web docker_ws/temperature_web
 
 # Install rosbridge-server
 RUN apt-get update && apt-get install -y \
@@ -14,6 +13,19 @@ WORKDIR /docker_ws
 
 RUN . /opt/ros/humble/setup.sh && \
     colcon build
+
+# Create a non-root user 
+#(From Allison Thackston's Dockerfiles repo https://github.com/athackst/dockerfiles)
+ARG USERNAME=ros
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupadd --gid $USER_GID $USERNAME \
+  && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
+  && mkdir /home/$USERNAME/.config && chown $USER_UID:$USER_GID /home/$USERNAME/.config
+
+# Run container as non-root for security 
+USER ros
 
 # Order of commands affects the behavior weirdly 
 # (i.e if we run the http server before the rosbridge everything will seem fine but no data reaches the website)
