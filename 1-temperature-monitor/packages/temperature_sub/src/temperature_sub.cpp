@@ -3,16 +3,25 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 
 #include <queue>
-#include <cfloat>
+#include <limits>
 #include <string>
 
 class TemperatureSubscriberNode : public rclcpp::Node
 {
 public:
     TemperatureSubscriberNode() : Node("temperature_sub")
-    {
+    {   
+        // Parameter constraints
+
+        // moving_average_period must be > 0
+        auto mv_av_per_param_descriptor = rcl_interfaces::msg::ParameterDescriptor{};
+        mv_av_per_param_descriptor.integer_range =  {rcl_interfaces::msg::IntegerRange()
+                                      .set__from_value(1)
+                                      .set__to_value(std::numeric_limits<int>::max())
+                                      .set__step(1)};
+
         // Parameter declaration and default values
-        this->declare_parameter("moving_average_period",10);
+        this->declare_parameter("moving_average_period",10,mv_av_per_param_descriptor);
         this->declare_parameter("warning_max",50.0);
         this->declare_parameter("warning_min",10.0);
 
@@ -47,7 +56,7 @@ private:
     // internal Variables
 
     // initial max temp = "-infinity"
-    double max_temp_ = -DBL_MAX;;
+    double max_temp_ = std::numeric_limits<double>::lowest();
     double sum_ = 0;
     double average_ = 0;
     std::queue<double> temp_celsius_values_;
@@ -80,7 +89,8 @@ private:
         double mv_average = 0.00;
         bool mv_average_ready = false;
 
-        if (temp_celsius_values_.size() >= moving_average_period_)
+        // Cast moving average period to size_t to avoid warning at build
+        if (temp_celsius_values_.size() >= static_cast<size_t>(moving_average_period_))
         {   
       
             sum_ = sum_ - temp_celsius_values_.front();
@@ -122,6 +132,14 @@ private:
         }
         
         // Warning system
+
+        // Swap warning limits if needed
+        if (warning_min_ > warning_max_)
+        {
+            RCLCPP_WARN(this->get_logger(), "Parameter warning: warning_min (%.2f) > warning_max (%.2f). Swapping them.", warning_min_, warning_max_); 
+            std::swap(warning_min_,warning_max_);   
+        }
+        
         if ((temp_celsius > warning_max_) || (temp_celsius < warning_min_) )
         {
             RCLCPP_WARN(this->get_logger(),"Temperature value outside normal range.");
