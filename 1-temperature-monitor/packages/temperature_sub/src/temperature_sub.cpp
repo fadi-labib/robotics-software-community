@@ -1,0 +1,178 @@
+#include "rclcpp/rclcpp.hpp"
+#include "temperature_interfaces/msg/temperature.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
+
+#include <queue>
+#include <limits>
+#include <string>
+
+class TemperatureSubscriberNode : public rclcpp::Node
+{
+public:
+    TemperatureSubscriberNode() : Node("temperature_sub")
+    {   
+        // Parameter constraints
+
+        // moving_average_period must be > 0
+        auto mv_av_per_param_descriptor = rcl_interfaces::msg::ParameterDescriptor{};
+        mv_av_per_param_descriptor.integer_range =  {rcl_interfaces::msg::IntegerRange()
+                                      .set__from_value(1)
+                                      .set__to_value(std::numeric_limits<int>::max())
+                                      .set__step(1)};
+
+        // Parameter declaration and default values
+        this->declare_parameter("moving_average_period",10,mv_av_per_param_descriptor);
+        this->declare_parameter("warning_max",50.0);
+        this->declare_parameter("warning_min",10.0);
+
+        // Assigning parameters to internal variables
+        moving_average_period_ = this->get_parameter("moving_average_period").as_int();
+        warning_max_ =this->get_parameter("warning_max").as_double();
+        warning_min_ =this->get_parameter("warning_min").as_double();
+
+        // Subscribe to temperature topic with sensor data QOS profile
+        subscriber_ = this->create_subscription<temperature_interfaces::msg::Temperature>(
+            "temperature",rclcpp::SensorDataQoS(),
+            std::bind(&TemperatureSubscriberNode::temperature_processing, this, std::placeholders::_1));
+        RCLCPP_INFO(this->get_logger(), "Temperature subscriber has been started.");
+
+        // Publisher for processed temperatures to display in web interface
+        // It's recommended by documentation to create a custom interface but the std_interface will do the job
+        publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
+            "processed_temps", rclcpp::SensorDataQoS());
+
+    }
+
+private:
+
+    rclcpp::Subscription<temperature_interfaces::msg::Temperature>::SharedPtr subscriber_;
+    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr publisher_;
+
+    // Parameters
+    int moving_average_period_ ;
+    double warning_max_;
+    double warning_min_;
+    
+    // internal Variables
+
+    // initial max temp = "-infinity"
+    double max_temp_ = std::numeric_limits<double>::lowest();
+    double sum_ = 0;
+    double average_ = 0;
+    std::queue<double> temp_celsius_values_;
+    std::queue<double> last_averages_;
+
+    // Threshold still needs tweaking to make the trend accurate
+    double threshold_trend_ = 0.4;
+
+
+    void temperature_processing(const temperature_interfaces::msg::Temperature::SharedPtr msg)
+    {
+        double temp_celsius = msg->value;
+        
+        // Convert to celsius if needed
+        if (!msg->is_celsius)
+        {
+            temp_celsius = (temp_celsius - 32) * 5 / 9;
+        }
+
+        // Update max temperature
+        if (temp_celsius > max_temp_)
+        {
+            max_temp_ = temp_celsius;
+        }
+
+        temp_celsius_values_.push(temp_celsius);
+
+        // Calculate moving average
+        sum_ += temp_celsius;
+        double mv_average = 0.00;
+        bool mv_average_ready = false;
+
+        // Cast moving average period to size_t to avoid warning at build
+        if (temp_celsius_values_.size() >= static_cast<size_t>(moving_average_period_))
+        {   
+      
+            sum_ = sum_ - temp_celsius_values_.front();
+            temp_celsius_values_.pop();
+            
+            mv_average = sum_ / moving_average_period_;
+            mv_average_ready = true;
+
+            // Add to queue to be used in Trend calculation
+            last_averages_.push(mv_average);
+        }
+
+        // Calculate Temperature Trend from moving averages
+        std::string temp_trend_str = "STABLE";
+
+        if (last_averages_.size() == 2) 
+        {
+            double difference = last_averages_.back() - last_averages_.front();
+            last_averages_.pop();
+
+            if (difference > threshold_trend_)
+            {
+                temp_trend_str = "RISING";   
+            }
+            else if (difference < -threshold_trend_)
+            {
+                temp_trend_str = "FALLING";
+            }
+        }
+
+        // Print Values
+        if (!mv_average_ready)
+        {
+            RCLCPP_INFO(this->get_logger(), "\nTemperature received: %.2f°C\nNot enough data to calculate moving average.\nMax Temperature: %.2f°C\nWaiting for Moving average to calculate Temeprature trend.",temp_celsius,max_temp_);
+        }
+        else
+        {
+            RCLCPP_INFO(this->get_logger(), "\nTemperature received: %.2f°C\nMoving average: %.2f°C\nMax Temperature: %.2f°C\nTemperature trend: %s.",temp_celsius,mv_average,max_temp_,temp_trend_str.c_str());
+        }
+        
+        // Warning system
+
+        // Swap warning limits if needed
+        if (warning_min_ > warning_max_)
+        {
+            RCLCPP_WARN(this->get_logger(), "Parameter warning: warning_min (%.2f) > warning_max (%.2f). Swapping them.", warning_min_, warning_max_); 
+            std::swap(warning_min_,warning_max_);   
+        }
+        
+        if ((temp_celsius > warning_max_) || (temp_celsius < warning_min_) )
+        {
+            RCLCPP_WARN(this->get_logger(),"Temperature value outside normal range.");
+        }
+        
+        
+        //Publish the processed temps to web interface
+        /*
+        Note that we will publish mv_average = 0.00 until mv_average_ready = true
+        but that will be handled in the front end (website)
+        */
+            publish_processed_temps(mv_average,max_temp_);
+
+
+
+    }
+
+    void publish_processed_temps(double mv_average,double max_temperature)
+    {
+
+        auto processed_msg = std_msgs::msg::Float64MultiArray();
+        processed_msg.data = {mv_average,max_temperature,warning_max_,warning_min_};
+        publisher_->publish(processed_msg);
+    }
+};
+
+
+int main(int argc, char **argv)
+{
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<TemperatureSubscriberNode>();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+    printf("Subscriber shutdown complete");
+    return 0;
+}

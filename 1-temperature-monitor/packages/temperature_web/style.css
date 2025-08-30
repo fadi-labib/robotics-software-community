@@ -1,0 +1,77 @@
+/* Vibe-coded CSS file for the web interface */
+
+body {
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.container {
+    margin-top: 40px;
+    background: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 1200px;
+    max-width: 95%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+canvas {
+    margin: 20px 0;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background: #f0f4ff;
+    margin: 5px 0;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.status-line {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.max-temp-line {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.status {
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: #ddd;
+    color: #333;
+}
+
+/* When connected */
+.status.connected {
+    background: #d4edda;
+    color: #155724;
+}
+
+/* When error */
+.status.error {
+    background: #f8d7da;
+    color: #721c24;
+}

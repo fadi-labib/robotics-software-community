@@ -1,0 +1,75 @@
+
+services:
+   
+   temperature_pub:
+
+    build: 
+      context: ./packages
+      dockerfile: temperature_pub/Dockerfile
+
+    # Adds an init system to propagate/handle incoming signals to container
+    # Used to allow SIGTERM to propagate to nodes for graceful shutdown
+    init: true
+
+    # Needed for a workaround to make launch file exit cleanly
+    stop_signal: SIGINT
+
+    environment:
+      # Note ROS_LOCALHOST_ONLY should be changed to 0 if we change the network to bridge
+      - ROS_LOCALHOST_ONLY=1
+      # For Linux : (IDs 0-101 and 215-232)
+      - ROS_DOMAIN_ID=42
+
+    network_mode: host
+
+    # Enables the RMW (FastDDS) to use shared memory
+    ipc: host 
+
+    container_name: temperature_publisher
+
+   temperature_sub:
+
+    build: 
+      context: ./packages
+      dockerfile: temperature_sub/Dockerfile
+
+    init: true
+    stop_signal: SIGINT
+
+    environment:
+      - ROS_LOCALHOST_ONLY=1
+      - ROS_DOMAIN_ID=42
+      - RCUTILS_COLORIZED_OUTPUT=1
+
+    network_mode: host
+    ipc: host
+
+    container_name: temperature_subscriber
+    
+    depends_on:
+      - temperature_pub 
+
+
+   temperature_web:
+
+    build: 
+      context: ./packages
+      dockerfile: temperature_web/Dockerfile
+
+    init: true
+
+    # As temperature_web waits for SIGKILL if we send SIGINT
+    stop_signal: SIGTERM
+
+    environment:
+      - ROS_LOCALHOST_ONLY=1
+      - ROS_DOMAIN_ID=42
+
+    network_mode: host
+    ipc: host
+    
+    container_name: temperature_web_interface
+    
+    depends_on:
+      - temperature_pub 
+      - temperature_sub
